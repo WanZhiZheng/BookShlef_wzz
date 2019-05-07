@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <group android:checkableBehavior="single">
+        <item
+            android:id="@+id/nav_bookshelf"
+            android:icon="@drawable/ic_bookshelf"
+            android:title="书籍" />
+        <item
+            android:id="@+id/nav_search"
+            android:icon="@drawable/ic_search"
+            android:title="搜索" />
+
+    </group>
+    <item
+        android:id="@+id/label_text"
+        android:title="标签" />
+
+         <group
+             android:id="@+id/label_add_group"
+             android:checkableBehavior="single">
+             <item android:id="@+id/nav_add_label"
+                 android:icon="@drawable/ic_add"
+                 android:title="添加新标签"/>
+
+        </group>
+
+        <group
+            android:id="@+id/last_three">
+            <item
+                android:id="@+id/nav_donate"
+                android:icon="@drawable/ic_donate"
+                android:title="捐赠" />
+            <item
+                android:id="@+id/nav_setting"
+                android:icon="@drawable/ic_settings"
+                android:title="设置" />
+
+            <item
+                android:id="@+id/nav_about"
+                android:icon="@drawable/ic_about"
+                android:title="关于" />
+        </group>
+
+
+</menu>
