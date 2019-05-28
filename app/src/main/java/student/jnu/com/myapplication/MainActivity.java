@@ -12,6 +12,7 @@ import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.os.Bundle;
+import android.os.Message;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
 import android.support.v4.app.ActivityCompat;
@@ -34,16 +35,24 @@ import android.widget.ArrayAdapter;
 import android.widget.EditText;
 import android.widget.Spinner;
 import android.widget.SpinnerAdapter;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.github.clans.fab.FloatingActionMenu;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
+import com.yzq.zxinglibrary.android.CaptureActivity;
+import com.yzq.zxinglibrary.common.Constant;
 
+import java.io.UnsupportedEncodingException;
 import java.lang.reflect.Type;
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.logging.Handler;
+import java.util.regex.Pattern;
 
 
 public class MainActivity extends AppCompatActivity
@@ -54,6 +63,7 @@ public class MainActivity extends AppCompatActivity
     static int present_bookshelf_selection;
     static int present_sort_selection;
     static int present_label_selection;
+    static int REQUEST_CODE_SCAN=666;
     FloatingActionMenu fab;
     SearchView searchView;
     Spinner mTopSpinner;
@@ -61,17 +71,11 @@ public class MainActivity extends AppCompatActivity
     BookShelfManager bookShelfManager;
     AlertDialog alertDialog;
     int label_count;
-    BookShelf bookShelf;
     CharSequence[] items={"扫描条形码","手动输入isbn码","手动添加书籍"};
-    //String[] labels;
-    //MenuItem menuItem;
     static boolean isShow_labelitem;
     static boolean isShow_bookshelfitem;
     NavigationView navigationView;
-    //BookShelf bookShelf=new BookShelf("所有");
-    //List<BookShelf> bookShelfList=new ArrayList<>();
     RecyclerView recyclerView_book;
-    //String[] bookshelfList_=new String[]{"默认书架","书架1","书架2"};
     public BookAdapter bookAdapter;
 
 
@@ -80,12 +84,10 @@ public class MainActivity extends AppCompatActivity
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        //这里也要读入label   然后 label_count=labelList.size()
 
-            bookShelfManager = new BookShelfManager();
-            bookShelfManager.read(MainActivity.this);
-
-
+        //读入BookShelfList
+        bookShelfManager = new BookShelfManager();
+        bookShelfManager.read(MainActivity.this);
         for(BookShelf temp:bookShelfManager.getBookShelfList())
             bookShelfList.add(temp);
 
@@ -108,13 +110,9 @@ public class MainActivity extends AppCompatActivity
                 bookShelfList.add(new BookShelf("添加书架"));
             }
 
-
-
-            //加载主list
-            if (bookShelfList.get(0).getBookList().size() == 0)
-                initBooks();
-
-
+        //加载主list
+        if (bookShelfList.get(0).getBookList().size() == 0)
+            initBooks();
 
         //加载上面的toolbar
         toolbar = (Toolbar) findViewById(R.id.toolbar);
@@ -123,10 +121,9 @@ public class MainActivity extends AppCompatActivity
         //加载右下角的添加fab
         fab=(FloatingActionMenu)findViewById(R.id.fab);
         fab.setClosedOnTouchOutside(true);
-
         com.github.clans.fab.FloatingActionButton add_single=(com.github.clans.fab.FloatingActionButton)findViewById(R.id.fab_add_single);
         com.github.clans.fab.FloatingActionButton add_batch=(com.github.clans.fab.FloatingActionButton)findViewById(R.id.fab_add_batch);
-
+        //添加单个
         add_single.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -138,18 +135,67 @@ public class MainActivity extends AppCompatActivity
                         switch (which) {
                             case 0:
                                 //扫描isbn
-
+                                Intent intent0=new Intent(MainActivity.this, CaptureActivity.class);
+                                startActivityForResult(intent0,REQUEST_CODE_SCAN);
                                 break;
                             case 1:
                                 //手动输入isbn
+                                final EditText text_ISBN=new EditText(MainActivity.this);
+                                text_ISBN.setHint("13位isbn码...");
+                                final AlertDialog.Builder dialog_inputISBN=new AlertDialog.Builder(MainActivity.this);
+                                dialog_inputISBN.setTitle("请输入ISBN码：");
+                                dialog_inputISBN.setView(text_ISBN);
+                                dialog_inputISBN.setCancelable(false);
+                                dialog_inputISBN.setPositiveButton("OK", new DialogInterface.OnClickListener() {
+                                    @Override
+                                    public void onClick(DialogInterface dialog, int which) {
+                                        final String txt_isbn=text_ISBN.getText().toString().trim();
+                                        //正则匹配，判断是否为13位数字的isbn码
+                                        boolean isISBN= Pattern.matches("\\d{13}",txt_isbn);
+                                        if(isISBN){
+                                            new Thread(new Runnable() {
+                                                @Override
+                                                public void run() {
+                                                    String json_return=null;
+                                                    try {
+                                                        //根据isbn码返回json数据
+                                                        json_return=RequestJson.getResult(txt_isbn);
+
+                                                        //解析json数据，得到Book对象
+                                                        Book book=RequestJson.parseJson_toBook(MainActivity.this,json_return,txt_isbn);
+                                                        Intent intent1=new Intent(MainActivity.this,BookEditActivity.class);
+                                                        intent1.putExtra("book_item",book);
+                                                        startActivity(intent1);
+
+
+                                                    } catch (NoSuchAlgorithmException e) {
+                                                        e.printStackTrace();
+                                                    } catch (UnsupportedEncodingException e) {
+                                                        e.printStackTrace();
+                                                    } catch (InvalidKeyException e) {
+                                                        e.printStackTrace();
+                                                    }
+                                                    Log.d("hhh", json_return);
+                                                }
+                                            }).start();
+
+
+                                        }
+                                        else{
+                                            Toast.makeText(MainActivity.this,"请输入正确的isbn码",Toast.LENGTH_SHORT).show();
+                                        }
+                                    }
+                                });
+                                dialog_inputISBN.show();
+
 
                                 break;
                             case 2:
                                 //手动添加书籍
-                                Intent intent=new Intent(MainActivity.this,BookEditActivity.class);
-                                Book book=new Book("","","","","","");
-                                intent.putExtra("book_item",book);
-                                startActivity(intent);
+                                Intent intent2=new Intent(MainActivity.this,BookEditActivity.class);
+                                Book book=new Book();
+                                intent2.putExtra("book_item",book);
+                                startActivity(intent2);
                                 break;
                         }
                     }
@@ -157,43 +203,29 @@ public class MainActivity extends AppCompatActivity
                 dialog.show();
                 fab.close(true);
 
-                //Toast.makeText(getApplicationContext(),"hhh",Toast.LENGTH_SHORT).show();
-                //Intent intent=new Intent(MainActivity.this,BookEditActivity.class);
-                //如果是手动添加，那就可以传一个空的book过去  避免在那边改
-                //startActivity(intent);
-                //这里看一下能不能 点击了按钮以后 取消蒙版 不行就算了   要看回github里面的一些使用说明
             }
         });
-
+        //批量添加
         add_batch.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                //isVisible=true;
-                //invalidateOptionsMenu();
-
-
                 fab.close(true);
             }
         });
-
-
-
+        
         //加载上方书架选择的spinner
         int count=bookShelfList.size();
         String[] bookshelfList_names=new String[count-1];
         for(int i=0;i<count-1;i++){
             bookshelfList_names[i] = bookShelfList.get(i).getBookshelfName();
         }
-        //SpinnerAdapter spinnerAdapter=ArrayAdapter.createFromResource(getApplicationContext(),R.array.category,R.layout.spinner_dropdown_item);
         mTopSpinner=new Spinner(getSupportActionBar().getThemedContext());
         ArrayAdapter<String> bookshelflist_adapter=new ArrayAdapter<String>(this,android.R.layout.simple_spinner_item,bookshelfList_names);
         bookshelflist_adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-//        readingstate_spinner.setAdapter(bookshelflist_adapter);
         mTopSpinner.setAdapter(bookshelflist_adapter);
         toolbar.addView(mTopSpinner,0);
         mTopSpinner.setSelection(present_bookshelf_selection);
-
-
+        //设置Spinner的点击事件
         mTopSpinner.setOnItemSelectedListener(new Spinner.OnItemSelectedListener() {
             @Override
             public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
@@ -241,6 +273,7 @@ public class MainActivity extends AppCompatActivity
 
             }
         });
+
         //加载主列表
         recyclerView_book=(RecyclerView)findViewById(R.id.recycler_view);
         LinearLayoutManager layoutManager=new LinearLayoutManager(this);
@@ -260,11 +293,9 @@ public class MainActivity extends AppCompatActivity
                     }
                 }
 
-                //super.onScrolled(recyclerView, dx, dy);
             }
         });
 
-        //bookshelf_spinner.getAdapter().getItem(present_bookshelfspinner_selection).toString()
 
         //加载左边的导航栏
         DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
@@ -272,7 +303,6 @@ public class MainActivity extends AppCompatActivity
                 this, drawer, toolbar, R.string.navigation_drawer_open, R.string.navigation_drawer_close);
         drawer.setDrawerListener(toggle);
         toggle.syncState();
-
         navigationView = (NavigationView) findViewById(R.id.nav_view);
         navigationView.setNavigationItemSelectedListener(this);
 
@@ -313,21 +343,9 @@ public class MainActivity extends AppCompatActivity
         searchView.setSearchableInfo(
                 searchManager.getSearchableInfo(getComponentName()));
                 searchView.setOnQueryTextListener(this);
-//        searchView.setOnCloseListener(new SearchView.OnCloseListener() {
-//            @Override
-//            public boolean onClose() {
-//                if(fab!=null){
-//                    fab.setVisibility(View.VISIBLE);
-//                    fab.showMenuButton(true);
-//                }
-//                return false;
-//            }
-//        });
-
-
         return true;
     }
-
+    //这个函数用来预加载菜单，可以调用invalidateOptionsMenu()来执行这个函数
     @Override
     public boolean onPrepareOptionsMenu(Menu menu) {
 
@@ -348,11 +366,9 @@ public class MainActivity extends AppCompatActivity
             fab.setVisibility(View.VISIBLE);
             fab.showMenuButton(true);
         }
-
-
         return true;
     }
-
+    //监听menu的选择事件，包括排序，更改、删除标签和书架等
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         // Handle action bar item clicks here. The action bar will
@@ -369,50 +385,27 @@ public class MainActivity extends AppCompatActivity
                 alertBuilder.setSingleChoiceItems(items, present_sort_selection, new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface dialogInterface, int position) {
-//                    Toast.makeText(MainActivity.this, items[i], Toast.LENGTH_SHORT).show();
+                        //这里只需要知道选择的是哪个位置的排序依据即可
                         present_sort_selection=position;
-//                    if(items[i] == "标题"){
-//                        sort_result.addAll(sort(bookList,1));
-//                        count[0]++;
-//                    }
-//                    if (items[i] == "作者") {
-//                        sort_result.addAll(sort(bookList,2));
-//                        count[0]++;
-//                    }
-//                    if (items[i] == "出版社") {
-//                        sort_result.addAll(sort(bookList,3));
-//                        count[0]++;
-//                    }
-//                    if (items[i] == "出版时间") {
-//                        sort_result.addAll(sort(bookList,4));
-//                        count[0]++;
-//                    }
+
                     }
                 });
 
                 alertBuilder.setPositiveButton("排序", new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface dialogInterface, int i) {
-//                    if(count[0] == 0){
-//                        sort_result.addAll(sort(bookList,1));
-//                    }
-                        // +++东西！！
+
                         sort(bookList,present_sort_selection);
                         bookAdapter.notifyDataSetChanged();
-
                         alertDialog.dismiss();
                     }
                 });
-
-
-
                 alertDialog = alertBuilder.create();
                 alertDialog.show();
-
                 break;
 
 
-
+            //更改书架名称
             case R.id.rename_bookshelf:
                 final EditText rename_bookshelf=new EditText(MainActivity.this);
                 AlertDialog.Builder dialog_renamebookshelf=new AlertDialog.Builder(MainActivity.this);
@@ -441,6 +434,7 @@ public class MainActivity extends AppCompatActivity
 
 
                 break;
+            //删除书架（该书架内书籍全部删除，同时“所有”里面找不到这些已删除书架内的书籍）
             case R.id.delete_bookshelf:
                 AlertDialog.Builder dialog_deletebookshelf=new AlertDialog.Builder(MainActivity.this);
                 dialog_deletebookshelf.setTitle("删除书架");
@@ -465,7 +459,7 @@ public class MainActivity extends AppCompatActivity
 
                 dialog_deletebookshelf.show();
                 break;
-
+            //更改标签名称
             case R.id.rename_label:
                 final EditText rename_label=new EditText(MainActivity.this);
                 AlertDialog.Builder dialog_renameLabel=new AlertDialog.Builder(MainActivity.this);
@@ -492,7 +486,7 @@ public class MainActivity extends AppCompatActivity
 
 
                 break;
-
+            //删除标签
             case R.id.delete_label:
                 AlertDialog.Builder dialog_deleteLabel=new AlertDialog.Builder(MainActivity.this);
                 dialog_deleteLabel.setTitle("删除标签");
@@ -585,7 +579,7 @@ public class MainActivity extends AppCompatActivity
 
 
 
-
+    //更改书架名称以后，要书籍里面书架这一栏的信息也要更新
     private void refreshBookshelf(String newBookshelfName){
         String oldbookshelfname=bookShelfList.get(present_bookshelf_selection).getBookshelfName();
         bookShelfList.get(present_bookshelf_selection).setBookshelfName(newBookshelfName);
@@ -600,7 +594,7 @@ public class MainActivity extends AppCompatActivity
             }
         }
     }
-
+    //这里是更改、删除书架以后呢，上面的下拉框要刷新一下同步
     private void refreshBookshelfSpinner(boolean isdelete){
 
             //刷新下拉框spinner内的内容
@@ -649,6 +643,7 @@ public class MainActivity extends AppCompatActivity
         } else if (id == R.id.nav_search) {
 
         } else if (id == R.id.nav_add_label) {
+            //添加标签
             final EditText label_name_edit=new EditText(MainActivity.this);
             label_name_edit.setHint("请输入标签名称");
             AlertDialog.Builder dialog=new AlertDialog.Builder(MainActivity.this);
@@ -690,7 +685,6 @@ public class MainActivity extends AppCompatActivity
             isShow_labelitem=true;
             invalidateOptionsMenu();
             toolbar.setBackgroundColor(getResources().getColor(R.color.LabelorBookshelf));
-            //toolbar颜色 要不要变一下
             refreshBookListByLabel();
         }
 
@@ -702,7 +696,7 @@ public class MainActivity extends AppCompatActivity
         }
         return true;
     }
-
+    //
     private void refreshBookListByLabel(){
         String selected_label=labelList.get(present_label_selection);
 
@@ -826,18 +820,10 @@ public class MainActivity extends AppCompatActivity
     @Override
     public boolean onQueryTextChange(String newText) {
         //得到过滤后的一组书籍
-
-//        List<Book> temp_bookList=new ArrayList<>();
-//        for(Book book:bookList)
-//            temp_bookList.add(book);
             List<Book> filter_bookList;
             if(!isShow_labelitem) {
                 filter_bookList = filter(bookShelfList.get(present_bookshelf_selection).getBookList(), newText);
-                //将过滤后的结果set进adapter 显示
-                //bookAdapter.setFilter(filter_bookList);
-//                bookList.clear();
-//                for (Book book : filter_bookList)
-//                    bookList.add(book);
+
             }else{
                 List<Book> temp_bookList=new ArrayList<>();
                 for(int i=0;i<bookShelfList.get(present_bookshelf_selection).getBookList().size();i++){
@@ -861,14 +847,44 @@ public class MainActivity extends AppCompatActivity
 
     }
 
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        //Toast.makeText(MainActivity.this,"hello",Toast.LENGTH_SHORT).show();
+        super.onActivityResult(requestCode, resultCode, data);
 
+        if(requestCode==REQUEST_CODE_SCAN && resultCode==RESULT_OK){
+            if(data!=null){
+                final String isbn_return=data.getStringExtra(Constant.CODED_CONTENT);
+                Toast.makeText(MainActivity.this,"hello",Toast.LENGTH_SHORT).show();
+                new Thread(new Runnable() {
+                    @Override
+                    public void run() {
+                        try {
+                            String json_return=RequestJson.getResult(isbn_return);
+                            Book book=RequestJson.parseJson_toBook(MainActivity.this,json_return,isbn_return);
+                            Intent intent=new Intent(MainActivity.this,BookEditActivity.class);
+                            intent.putExtra("book_item",book);
+                            startActivity(intent);
+
+                        } catch (NoSuchAlgorithmException e) {
+                            e.printStackTrace();
+                        } catch (UnsupportedEncodingException e) {
+                            e.printStackTrace();
+                        } catch (InvalidKeyException e) {
+                            e.printStackTrace();
+                        }
+
+                    }
+                }).start();
+            }
+
+        }
+
+    }
 
     @Override
     protected void onDestroy() {
-//        bookShelfManager.getBookShelfList().clear();
-//        for(BookShelf bookShelf_temp:bookShelfList)
-//            bookShelfManager.getBookShelfList().add(bookShelf_temp);
-//        bookShelfManager.save(getApplicationContext());
+
         super.onDestroy();
     }
 }

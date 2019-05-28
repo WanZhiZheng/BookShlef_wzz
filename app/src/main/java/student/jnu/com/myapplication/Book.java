@@ -28,6 +28,16 @@ public class Book implements Serializable{
     private String bookresource="douban.com";
 
 
+    public Book(){
+        this.uuid= UUID.randomUUID().toString().replaceAll("-","");
+        this.labelList=new ArrayList<String>();
+        this.bookName="";
+        this.ISBN="";
+        this.author="";
+        this.pressName="";
+        this.pressTime="";
+        this.bookshelf="默认书架";
+    }
 
     public Book(String bookName,String ISBN,String author,String pressName,String pressTime,String bookshelf){
 //        this.imageId=imageId;
@@ -45,21 +55,6 @@ public class Book implements Serializable{
         return uuid;
     }
 
-//    public int getImageId(){
-//        return imageId;
-//    }
-
-//    public Bitmap getBook_bitmap(){
-//        return book_bitmap;
-//    }
-//
-//    public void setBook_bitmap(Bitmap book_bitmap){
-//        this.book_bitmap=book_bitmap;
-//    }
-//
-//    public void setBookBitmapFromLocal(){
-//        book_bitmap=ImageManager.GetLocalBitmap(this,)
-//    }
     public List<String> getLabelList(){
         return labelList;
     }
@@ -123,4 +118,8 @@ public class Book implements Serializable{
     public void setLabel(String label){this.label=label;}
 
     public void setBookresource(String bookresource){this.bookresource=bookresource;}
+
+
+
+
 }
