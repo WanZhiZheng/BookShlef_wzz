@@ -6,14 +6,26 @@ import java.util.Comparator;
  * Created by ASUS on 2019/4/17.
  */
 
-public class PressTimeComparable implements Comparator<Book> {
+public class PressTimeComparator implements Comparator<Book> {
     @Override
     public int compare(Book book, Book t1) {
-        String year1 = book.getPressTime().substring(0,4);
-        int year_one = Integer.valueOf(year1);
-        String year2 = t1.getPressTime().substring(0,4);
-        int year_two = Integer.valueOf(year2);
-        if(year_one>year_two){
+        int year_one,year_two;
+        String year1 = book.getPressTime();
+        if(year1==null || year1==""){
+            year_one=0;
+        }else {
+            year_one = Integer.valueOf(year1.substring(0,4));
+        }
+        String year2 = t1.getPressTime();
+        if(year2==null || year2==""){
+            year_two=0;
+        }else {
+            year_two = Integer.valueOf(year2.substring(0,4));
+        }
+
+        if(year_one==0 && year_two==0){
+            return 0;
+        }else if(year_one>year_two){
             return 1;
         }else if(year_one<year_two){
             return -1;

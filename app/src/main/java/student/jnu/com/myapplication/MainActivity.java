@@ -1,6 +1,5 @@
 package student.jnu.com.myapplication;
 
-import android.Manifest;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.SearchManager;
@@ -8,15 +7,8 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
-import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
 import android.os.Bundle;
-import android.os.Message;
-import android.support.design.widget.FloatingActionButton;
-import android.support.design.widget.Snackbar;
-import android.support.v4.app.ActivityCompat;
-import android.support.v4.content.ContextCompat;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.SearchView;
@@ -34,8 +26,6 @@ import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.EditText;
 import android.widget.Spinner;
-import android.widget.SpinnerAdapter;
-import android.widget.TextView;
 import android.widget.Toast;
 
 import com.github.clans.fab.FloatingActionMenu;
@@ -51,7 +41,6 @@ import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.logging.Handler;
 import java.util.regex.Pattern;
 
 
@@ -212,7 +201,7 @@ public class MainActivity extends AppCompatActivity
                 fab.close(true);
             }
         });
-        
+
         //加载上方书架选择的spinner
         int count=bookShelfList.size();
         String[] bookshelfList_names=new String[count-1];
@@ -748,19 +737,19 @@ public class MainActivity extends AppCompatActivity
      */
     public void sort(List<Book> bookList,int type){
         List<Book> sort_bookList = new ArrayList<Book>();
-//        new AuthorNameComparable();
+//        new AuthorNameComparator();
         sort_bookList=bookList;
         if(type==0) {
-            Collections.sort(sort_bookList, new BookNameComparable());
+            Collections.sort(sort_bookList, new BookNameComparator());
         }
         if(type==1){
-            Collections.sort(sort_bookList,new AuthorNameComparable());
+            Collections.sort(sort_bookList,new AuthorNameComparator());
         }
         if(type==2){
-            Collections.sort(sort_bookList,new PressNameComparable());
+            Collections.sort(sort_bookList,new PressNameComparator());
         }
         if(type==3){
-            Collections.sort(sort_bookList,new PressTimeComparable());
+            Collections.sort(sort_bookList,new PressTimeComparator());
         }
 
        // return sort_bookList;

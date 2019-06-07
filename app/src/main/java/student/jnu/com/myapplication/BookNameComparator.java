@@ -8,7 +8,7 @@ import java.util.Comparator;
  * Created by ASUS on 2019/4/17.
  */
 
-public class BookNameComparable implements Comparator<Book> {
+public class BookNameComparator implements Comparator<Book> {
     @Override
     public int compare(Book book, Book t1) {
         String convert1 ="";
